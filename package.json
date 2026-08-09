@@ -1,0 +1,15 @@
+{
+  "name": "apns-relay",
+  "version": "1.0.0",
+  "description": "APNs'e HTTP/2 üzerinden push gönderen minik köprü servis (Herbokolog için)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
