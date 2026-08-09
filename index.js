@@ -6,10 +6,11 @@
 // Kullanım (n8n'den POST /push):
 // {
 //   "deviceToken": "...",
-//   "jwt": "...",          -> n8n'deki "Build APNs JWT" node'unun ürettiği token
+//   "jwt": "...",              -> n8n'deki "Build APNs JWT" node'unun ürettiği token
 //   "bundleId": "com.dmkrclk8.herbokolog",
 //   "title": "Yeni Deprem",
-//   "body": "İzmir — 4.2 büyüklüğünde"
+//   "body": "İzmir — 4.2 büyüklüğünde",
+//   "environment": "sandbox"   -> "sandbox" (Xcode/debug) veya "production" (TestFlight/App Store)
 // }
 
 const express = require("express");
@@ -20,9 +21,13 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-function sendToAPNs({ deviceToken, jwt, bundleId, title, body }) {
+function sendToAPNs({ deviceToken, jwt, bundleId, title, body, environment }) {
   return new Promise((resolve) => {
-    const client = http2.connect("https://api.push.apple.com");
+    // environment "sandbox" ise Apple'ın test sunucusuna, aksi halde production'a bağlan.
+    const host = environment === "sandbox"
+      ? "https://api.sandbox.push.apple.com"
+      : "https://api.push.apple.com";
+    const client = http2.connect(host);
 
     client.on("error", (err) => {
       resolve({ ok: false, error: "connect_error: " + err.message });
@@ -66,11 +71,18 @@ app.get("/", (req, res) => {
 });
 
 app.post("/push", async (req, res) => {
-  const { deviceToken, jwt, bundleId, title, body } = req.body || {};
+  const { deviceToken, jwt, bundleId, title, body, environment } = req.body || {};
   if (!deviceToken || !jwt || !bundleId) {
     return res.status(400).json({ ok: false, error: "deviceToken, jwt ve bundleId zorunludur." });
   }
-  const result = await sendToAPNs({ deviceToken, jwt, bundleId, title: title || "Bildirim", body: body || "" });
+  const result = await sendToAPNs({
+    deviceToken,
+    jwt,
+    bundleId,
+    title: title || "Bildirim",
+    body: body || "",
+    environment,
+  });
   res.status(result.ok ? 200 : 502).json(result);
 });
 
